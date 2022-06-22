@@ -322,8 +322,9 @@ print('==============')
 
 
 backend = SparkBackend(spark_context=spark.sparkContext, num_workers=args.num_workers)
-store = LocalStore(args.work_dir)
-
+# store = LocalStore(args.work_dir)
+# store = LocalStore(prefix_path='/mnt/c/users/bfi0/downloads/teste/experiments')
+store = LocalStore(prefix_path='/mnt/c/users/bfi0/downloads/teste/experiments', train_path='/mnt/c/users/bfi0/downloads/teste/training_dataset', val_path='/mnt/c/users/bfi0/downloads/teste/val_dataset')
 
 # Define estimator generating function.
 # Input: Dictionary containing parameter values
@@ -387,11 +388,19 @@ train_df = train_df.drop('Date')
 test_df = test_df.drop('Date')
 
 # Instantiate model selection object
-model_selection = TPESearch(backend=backend, store=store, estimator_gen_fn=estimator_gen_fn, search_space=search_space,
-                           num_models=args.num_models, num_epochs=args.epochs, validation='Validation', evaluation_metric='loss',
-                           feature_columns=all_cols, label_columns=['Sales'], parallelism=args.num_workers)
+# model_selection = TPESearch(backend=backend, store=store, estimator_gen_fn=estimator_gen_fn, search_space=search_space,
+#                            num_models=args.num_models, num_epochs=args.epochs, validation='Validation', evaluation_metric='loss',
+#                            feature_columns=all_cols, label_columns=['Sales'], parallelism=args.num_workers)
 
-model = model_selection.fit(train_df).set_output_columns(['Sales'])
+model_selection = TPESearch(backend=backend, store=store, estimator_gen_fn=estimator_gen_fn, search_space=search_space,
+                           num_models=5, num_epochs=10, validation='Validation', evaluation_metric='loss',
+                           feature_columns=all_cols, label_columns=['Sales'], parallelism=args.num_workers)
+                           
+
+# model = model_selection.fit(train_df).set_output_columns(['Sales'])
+
+# Perform model selection
+model = model_selection.fit_on_prepared_data()
 
 history = model.get_history()
 best_val_rmspe = min(history['val_exp_rmspe'])
